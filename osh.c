@@ -33,54 +33,62 @@ int parse(char* str, int len, char* args[]);
 
 
 int main() {
+    // char* vs[] = {"ls"};
+    // execvp("man", vs);
+
     int main_running = 1;
     int child_status;
     pid_t pid;
     
     while(main_running) {
-        println("\nosh> ");
+        println("osh> ");
 
-        // Free recepient string for processing
+        // -- Free recepient string for processing
         latest_cmd = NULL;
         latest_cmd_len = 0;
         getline(&latest_cmd, &latest_cmd_len, stdin);
         
-        // Enqueue latest command at tail of queue (and dequeue oldest entry as necessary)
+        // -- Enqueue latest command at tail of queue (and dequeue oldest entry as necessary)
         enqueue(cmds_hist, latest_cmd);
         
-        // Parse
+        // -- Parse
         int args_len = parse(latest_cmd, latest_cmd_len, args);
         
-        // Execute commands
+        // -- Execute commands
         pid = fork();
         
-        // parent
+        // -- parent
         if(pid > 0) {
+            // println("\n[In parent]\n");
             if(*args[args_len-1] == '&') {
-                // Parent wait if command ends in '&'
+                // -- Parent wait if command ends in '&'
                 waitpid(pid, &child_status, 0);
             }
             wait(&child_status);
         }
-        // child
+        // -- child
         else if(pid == 0) {
-            // execute command
-            /*if(strcmp(args[0], "history") == 0) {
-                // invoke history
-                while(1);
+            // println("\n[In child]\n");
+            // -- execute command
+            /////
+            // -- invoke history
+            if(strcmp(args[0], "history") == 0) {
+                
             }
-            else*/ {
-                int execvp_fail = execvp(args[0], args + 1);
-                // handle error
+            else {
+                // if(args_len <= 2) args[args_len] = "\0";
+                for(char** a = args; *a; ++a) println("'%s'\n", *a);
+                int execvp_fail = execvp(args[0], args);
+                // -- handle error
                 println("Nothing appropriate. Command not found, is invalid, or"
                         " a disk error has occurred.");
-                println("%d", execvp_fail);
+                println("\n{%d}\n", execvp_fail);
             }
             exit(1);
         }
-        // failed
+        // -- failed
         else {
-            println("Grave: Error creating process.\n");
+            println("Grave: Error creating process.");
         }
         
     }
@@ -91,16 +99,16 @@ int main() {
 }
 
 void enqueue(RingQue* q, char* str) {
-    // Advance ring index
+    // -- Advance ring index
     q->s = ((q->s) + 1) % MAX_CMDS;
-    // Free current tenant of start ptr
+    // -- Free current tenant of start ptr
     free_s(&q->que[q->s]);
     q->que[q->s] = str;
 }
 
 int parse(char* str, int len, char* args[]) {
     int i = 0;
-    while(str && *str && i < MAX_CMD_LEN) {
+    while(str && *str && i < MAX_CMD_LEN - 1) {
         char* start = str;
         char* end = str;
         if(*str == ' ' || *str == '\n') {
