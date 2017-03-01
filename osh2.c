@@ -84,10 +84,6 @@ int parse(char* str, char* args[]) {
     args_len = i;
 }
 
-// void run_cmd() {
-
-// }
-
 void handle_bang() {
     int num = cmds_len;
     if(args[0][1] != '!') {
@@ -183,7 +179,7 @@ int main() {
             else if(pid == 0) {
                 int execvp_err = execvp(args[0], args);
                 println("Nothing appropriate."
-                        " Command not found or is invalid.");
+                        " Command '%s' not found or is invalid.", args[0]);
                 exit(1);
             }
             // -- Oh hel~
