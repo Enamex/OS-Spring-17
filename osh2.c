@@ -123,7 +123,7 @@ void handle_child(int signum) {
         }
         prompt();
     }
-    else wait(&child_proc_ws);
+    // else wait(&child_proc_ws);
 }
 
 int main() {
@@ -190,9 +190,9 @@ int main() {
             pid = fork();
             // -- parent
             if(pid > 0) {
-                // if(should_wait) {
-                //     wait(&child_proc_ws);
-                // }
+                if(should_wait) {
+                    wait(&child_proc_ws);
+                }
                 // else {
                 //     waitpid(pid, &child_proc_ws, WNOHANG);
                 // }
