@@ -72,7 +72,7 @@ int parse(char* str, char* args[]) {
             args[i] = realloc(args[i], MAX_ARG_LEN * sizeof(char));
             // -- `end` should be out of word bounds after loop
             char* end = str;
-            while(end && *end && *end != '\n' && *end != ' ' && *end != '&') ++end;
+            while(end && *end && *end != '\n' && *end != ' ' /*&& *end != '&'*/) ++end;
             strncpy(args[i], str, end - str);
             args[i][end-str] = '\0';
             str = end + 1;
@@ -95,7 +95,7 @@ void handle_bang() {
     }
     else cmd_run = cmds[(tail + num - 1) % MAX_CMDS];
     auto_prompt = cmd_run;
-    println("Illegal Index.\n");
+    if(!cmd_run) println("Illegal Index.\n");
 }
 
 void handle_history() {
@@ -112,9 +112,25 @@ void add_to_history() {
     }
 }
 
+// http://stackoverflow.com/a/22940622
+void handle_child(int signum) {
+    pid_t pid;
+    int child_proc_ws;
+
+    if(!should_wait) {
+        while ((pid = waitpid( -1, &child_proc_ws, WNOHANG)) > 0)
+        {
+        }
+        prompt();
+    }
+    else wait(&child_proc_ws);
+}
+
 int main() {
     int running = 1;
     pid_t pid;
+
+    signal(SIGCHLD, handle_child);
 
     for(int i = 0; i < MAX_CMD_ARGS; ++i) {
         args[i] = malloc(MAX_ARG_LEN * sizeof(char));
@@ -142,7 +158,12 @@ int main() {
         if(args_cnt != 0) {
             char* an = args[args_cnt - 1];
             char* a0 = args[0];
-            should_wait = strcmp(an, "&") == 0 ? 0 : 1;
+            if(strcmp(an, "&") == 0) {
+                should_wait = 0;
+                // FIXME ! Too much allocation and deallocation
+                free_s(&args[args_cnt - 1]);
+            }
+            else should_wait = 1;
             if(a0[0] == '!') {
                 handle_bang();
                 cmd_read = 1;
@@ -163,29 +184,26 @@ int main() {
             cmd_read = 0;
         }
 
-        // if(is_internal_command()) {
-
-        // }
-
         // -- must invoke external command
         {   
             pid = fork();
             // -- parent
             if(pid > 0) {
-                if(should_wait) {
-                    wait(&child_proc_ws);
-                }
-                else {
-                    waitpid(pid, &child_proc_ws, WNOHANG);
-                }
+                // if(should_wait) {
+                //     wait(&child_proc_ws);
+                // }
+                // else {
+                //     waitpid(pid, &child_proc_ws, WNOHANG);
+                // }
                 add_to_history();
             }
             // -- child
             else if(pid == 0) {
+                running = 0;
                 int execvp_err = execvp(args[0], args);
                 println("Nothing appropriate."
                         " Command '%s' not found or is invalid.\n", args[0]);
-                exit(1);
+                _Exit(EXIT_FAILURE);
             }
             // -- Oh hel~
             else {
