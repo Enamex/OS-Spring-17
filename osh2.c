@@ -118,7 +118,7 @@ void handle_child(int signum) {
     int child_proc_ws;
 
     if(!should_wait) {
-        while ((pid = waitpid( -1, &child_proc_ws, WNOHANG)) > 0)
+        while ((pid = waitpid(-1, &child_proc_ws, WNOHANG)) > 0)
         {
         }
         prompt();
@@ -175,7 +175,8 @@ int main() {
                 continue;
             }
             else if(strcmp(a0, "exit") == 0) {
-                exit(0);
+                running = 0;
+                continue;
             }
             cmd_read = 0;
         }
@@ -211,7 +212,6 @@ int main() {
             }
         }
     }
-
 
     return 0;
 }
