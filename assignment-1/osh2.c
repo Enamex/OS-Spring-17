@@ -121,9 +121,8 @@ void handle_child(int signum) {
         while ((pid = waitpid(-1, &child_proc_ws, WNOHANG)) > 0)
         {
         }
-        prompt();
+        // prompt();
     }
-    // else wait(&child_proc_ws);
 }
 
 int main() {
@@ -191,11 +190,8 @@ int main() {
             // -- parent
             if(pid > 0) {
                 if(should_wait) {
-                    wait(&child_proc_ws);
+                    waitpid(pid, &child_proc_ws, 0);
                 }
-                // else {
-                //     waitpid(pid, &child_proc_ws, WNOHANG);
-                // }
                 add_to_history();
             }
             // -- child
