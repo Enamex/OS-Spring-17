@@ -9,6 +9,6 @@
             "-g",
             "-pthread",
             "main.c",
-            "-o", "run"],
+            "-o", "run.exe"],
     "showOutput": "always"
 }
