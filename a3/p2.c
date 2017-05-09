@@ -8,15 +8,16 @@
 #define NUM_PHILS (5)
 #define MAX_WAIT_US ((int)(3e6))
 #define MIN_WAIT_US ((int)(1e6))
-#define LIFETIME ((int)(1000 * 1e6))
+#define LIFETIME ((int)(50 * 1e6))
 #define cast(t, e) ((t)(e))
 #define leftOf(id) ((id + NUM_PHILS - 1) % NUM_PHILS)
 #define rightOf(id) ((id + 1) % NUM_PHILS)
 #define CONCAT_(x, y) x y
 #define CONCAT(x, y) CONCAT_(x, y)
+#define VA_ARGS(...) , ##__VA_ARGS__
 #define println(fmt, ...) \
     do { \
-        printf(CONCAT(fmt, "\n"), __VA_ARGS__); \
+        printf(CONCAT(fmt, "\n") VA_ARGS(__VA_ARGS__)); \
     } while(0)
 
         // fflush(stdout); \
@@ -54,7 +55,7 @@ void* life(void* arg) {
 
     free((int*)arg);
 
-    println("#%d started.", id);
+    println("[Thread #%d spawned]", id);
 
     Philosopher *self = &phil[id];
     Philosopher *left;
@@ -78,9 +79,11 @@ void* life(void* arg) {
 
                 usleep(think_time);
 
+                //! FORK WANT PICKUP
                 // pthread_mutex_lock(&self->mutex);
                 self->state = psHungry;
                 // pthread_mutex_unlock(&self->mutex);
+                //! END FORK WANT PICKUP
             } break;
             
             // still hungry
@@ -88,6 +91,7 @@ void* life(void* arg) {
             case psHungry: {
                 println("[%4d] #%d wishes to eat.", time_seconds(), id);
 
+                //! FORK PICKUP
                 // Something very wrong here...
                 // take right chopstick
                 pthread_mutex_lock(&(right->mutex));
@@ -104,6 +108,7 @@ void* life(void* arg) {
 
                 pthread_mutex_unlock(&left->mutex);
                 pthread_mutex_unlock(&right->mutex);
+                //! END FORK PICKUP
             } break;
 
             // finishing eating
@@ -115,6 +120,7 @@ void* life(void* arg) {
 
                 usleep(eat_time);
 
+                //! FORK PUTDOWN
                 // pthread_mutex_lock(&right->mutex);
                 pthread_mutex_lock(&left->mutex);
                 pthread_mutex_lock(&self->mutex);
@@ -129,11 +135,12 @@ void* life(void* arg) {
                 pthread_mutex_unlock(&self->mutex);
                 pthread_mutex_unlock(&left->mutex);
                 // pthread_mutex_unlock(&right->mutex);
+                //! END FORK PUTDOWN
             } break;
         }
     }
 
-    println("[%4d] #%d has retired to the conversation room.", time_seconds(), id);
+    println("[%4d] #%d has retired to the Retiring Room.", time_seconds(), id);
 
     return NULL;
 }
@@ -155,8 +162,12 @@ void p2_loop() {
         pthread_create(&threads[i], NULL, &life, (void*)id);
     }
 
+    usleep(LIFETIME);
+
+    println("Experiments over. Philosophers _dead_ in the Retiring Room.");
+
     // Philosophers die :'(
-    for(int i = 0; i < NUM_PHILS; ++i) {
-        pthread_join(threads[i], NULL);
-    }
+    // for(int i = 0; i < NUM_PHILS; ++i) {
+    //     pthread_join(threads[i], NULL);
+    // }
 }

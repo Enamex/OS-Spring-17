@@ -4,7 +4,7 @@
 
 int main() {
     srand(1337);
-
+    // osh_loop();
     p2_loop();
 
     return 0;
