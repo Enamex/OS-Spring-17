@@ -4,6 +4,11 @@
     "version": "0.1.0",
     "command": "gcc",
     "isShellCommand": true,
-    "args": ["main.c", "-ggdb3", "-o", "main.out"],
+    "args": [
+            //"-std", "gnu11",
+            "-g",
+            "-pthread",
+            "main.c",
+            "-o", "run.exe"],
     "showOutput": "always"
 }
