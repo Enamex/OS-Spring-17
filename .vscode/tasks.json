@@ -8,8 +8,11 @@
     "args": [
             //"-std", "gnu11",
             "-g",
+            "-Wall",
             "-pthread",
             "main.c",
-            "-o", "run.exe"],
+            "-o", "run.exe"
+            //, "&& echo Done."
+            ],
     "showOutput": "always"
 }
