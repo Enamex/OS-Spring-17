@@ -24,8 +24,11 @@
         // fflush(stdout);
 #define _right(i) (forks[i])
 #define _left(i) (forks[leftOf(i)])
-#define _my(i) (forks[i])
+#define _at(i) (forks[i])
 
+#define _cond_wait_on(x) do { pthread_cond_wait(&(x).cv, &(x).mx); } while(0)
+#define lock(x) do{ pthread_mutex_lock(&(x).mx); } while(0)
+#define unlock(x) do{ pthread_mutex_unlock(&(x).mx); } while(0)
 // typedef _Bool bool;
 
 typedef enum {
@@ -43,8 +46,8 @@ typedef struct {
 } Philosopher;
 
 typedef struct {
-    // pthread_mutex_t mx;
-    // pthread_cond_t  cv;
+    pthread_mutex_t mx;
+    pthread_cond_t  cv;
     bool            in_use;
 } Fork;
 
@@ -96,10 +99,10 @@ void* life(void* arg) {
                 usleep(think_time);
 
                 //! FORK WANT PICKUP
-                pthread_mutex_lock(&glock);
+                lock(_at(id));
                 *self = psHungry;
                 hungry_printed = false;
-                pthread_mutex_unlock(&glock);
+                unlock(_at(id));
                 // pthread_mutex_lock(&_left(id).mx);
                 // pthread_mutex_lock(&_right(id).mx);
                 
@@ -124,34 +127,32 @@ void* life(void* arg) {
                 
                 // pthread_mutex_lock(&_left(id).mx);
                 // pthread_mutex_lock(&_right(id).mx);
-                pthread_mutex_lock(&glock);
+                lock(_right(id));
+                lock(_left(id));
                     bool *liu = &_left(id).in_use, *riu = &_right(id).in_use;
-
-                    // while(*liu ^ *riu) {
-                    //     if(*liu) {
-                    //         // _right(id).in_use = true;
-                    //         while(_left(id).in_use)
-                    //             pthread_cond_wait(&beacon, &glock);
-                    //     }
-                    //     else {
-                    //         // _left(id).in_use = true;
-                    //         while(_right(id).in_use)
-                    //             pthread_cond_wait(&beacon, &glock);
-                    //     }
-                    // }
                     
-                    if(*liu || *riu) {
-                        pthread_cond_wait(&beacon, &glock);
+                    if(*riu) {
+                        unlock(_left(id));
+                        while(*riu)
+                            _cond_wait_on(_right(id));
                     }
-                    else
-                    if(!(*liu || *riu)) {
-                        _left(id).in_use    = true;
-                        _right(id).in_use   = true;
-                        *self = psEating;
+                    *riu = true;
+                    while(*liu) {
+                        unlock(_left(id));
+                        // while(*riu) {
+                            *riu = false;
+                            _cond_wait_on(_right(id));
+                            *riu = true;
+                        // }
+                        lock(_left(id));
                     }
-                pthread_mutex_unlock(&glock);
-                // pthread_mutex_unlock(&_right(id).mx);
-                // pthread_mutex_unlock(&_left(id).mx);
+                    
+                    // picked up
+                    *liu = true;
+                    *riu = true;
+                // pthread_mutex_unlock(&glock);
+                unlock(_left(id));
+                unlock(_right(id));
 
                 //! END FORK PICKUP
             } break;
@@ -165,17 +166,15 @@ void* life(void* arg) {
                 usleep(eat_time);
 
                 //! FORK PUTDOWN
-                // pthread_mutex_lock(&_left(id).mx);
-                // pthread_mutex_lock(&_right(id).mx);
-                pthread_mutex_lock(&glock);
+                lock(_left(id));
+                lock(_right(id));
                 
                 *self               = psThinking;
                 _left(id).in_use    = false;
                 _right(id).in_use   = false;
 
-                pthread_mutex_unlock(&glock);
-                // pthread_mutex_unlock(&_right(id).mx);
-                // pthread_mutex_unlock(&_left(id).mx);
+                unlock(_right(id));
+                unlock(_left(id));
                 
                 //! END FORK PUTDOWN
             } break;
@@ -189,18 +188,19 @@ void* life(void* arg) {
 
 void p2_loop() {
     // INIT
-    // for(int i = 0; i < NUM_PHILS; ++i) {
-    //     pthread_mutex_init(&_my(i).mx, NULL);
-    //     pthread_cond_init(&_my(i).cv, NULL);
-    // }
-    pthread_mutex_init(&glock, NULL);
-    pthread_cond_init(&beacon, NULL);
+    for(int i = 0; i < NUM_PHILS; ++i) {
+        pthread_mutex_init(&_at(i).mx, NULL);
+        pthread_cond_init(&_at(i).cv, NULL);
+    }
+    // pthread_mutex_init(&glock, NULL);
+    // pthread_cond_init(&beacon, NULL);
     // END INIT
 
     // Philosophers live
     start = time(0);
+    
     for(int i = 0; i < NUM_PHILS; ++i) {
-        println("#%d taking seat...", i);
+        println("#%d enters dining room...", i);
         int* id = malloc(sizeof (int));
         *id = i;
         pthread_create(&threads[i], NULL, &life, (void*)id);
