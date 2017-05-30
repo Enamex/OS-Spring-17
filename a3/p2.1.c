@@ -24,7 +24,7 @@
 #define LIFETIME ((int)(50 * 1e5))
 #define cast(t, e) ((t)(e))
 #define leftOf(id) ((id + (NUM_PHILS - 1)) % NUM_PHILS)
-#define rightOf(id) (id)
+#define rightOf(id) (id) // !FIXME
 //((id + 1) % NUM_PHILS)
 #define CONCAT_(x, y) x y
 #define CONCAT(x, y) CONCAT_(x, y)
@@ -167,7 +167,6 @@ void* life(void* arg) {
                 ++meals;
 
                 //! FORK PUTDOWN
-                
                 //! release both forks
                 _left(id).in_use    = false;
                 _right(id).in_use   = false;
